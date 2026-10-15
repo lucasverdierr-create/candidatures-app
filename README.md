@@ -37,7 +37,7 @@ Netlify → ton site → **Site configuration → Environment variables → Add 
 | Variable | Valeur |
 |---|---|
 | `AIRTABLE_TOKEN` | ton token `pat…` |
-| `AIRTABLE_BASE_ID` | `appVqAv9iZbPWkEZ5` |
+| `AIRTABLE_BASE_ID` | `appXXXXXXXXXXXXXX` |
 | `AIRTABLE_TABLE` | `Candidatures` (nom exact de l'onglet) |
 | `APP_PIN` | le code d'accès que tu taperas sur l'iPhone (ex. 6 chiffres) |
 | `MAKE_SECRET` | une longue chaîne aléatoire, partagée avec Make |
