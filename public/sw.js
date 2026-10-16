@@ -1,5 +1,5 @@
 // Service worker : cache de l'app + notifications
-const CACHE = "candidatures-v3";
+const CACHE = "candidatures-v4";
 const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
@@ -32,6 +32,7 @@ self.addEventListener("push", (e) => {
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
       data: { url: d.url || "/" },
+      tag: d.tag || undefined,
     })
   );
 });

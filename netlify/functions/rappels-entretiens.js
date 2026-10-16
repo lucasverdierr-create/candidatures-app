@@ -17,10 +17,15 @@ export default async () => {
     const when = new Date(f["Date entretien"]);
     const diff = Math.round((new Date(parisDay(when) + "T12:00:00Z") - today) / 86400000);
     if (diff !== 3 && diff !== 1) continue;
-    const res = await pushAll({
-      title: diff === 3 ? `Entretien dans 3 jours · ${f.Entreprise || ""}` : `Entretien demain · ${f.Entreprise || ""}`,
-      body: [f["Intitulé"], `${jour(when)} à ${heure(when)}`].filter(Boolean).join(" — ") + (diff === 3 ? ". Prépare ton pitch et tes questions." : ". Relis ta fiche ce soir."),
-      url: `/?id=${r.id}`,
+    const poste = f["Intitulé"] || "Entretien";
+    const res = await pushAll(diff === 3 ? {
+      title: `📅 Entretien dans 3 jours · ${f.Entreprise || ""}`,
+      body: `${poste} — ${jour(when)} à ${heure(when)}\nRelis ton pitch et prépare tes questions.`,
+      url: `/?id=${r.id}`, tag: `itv3-${r.id}`,
+    } : {
+      title: `⏰ Entretien demain à ${heure(when)} · ${f.Entreprise || ""}`,
+      body: `${[poste, f.Ville].filter(Boolean).join(" — ")}\nRelis ta fiche ce soir, tout est dans l'app.`,
+      url: `/?id=${r.id}`, tag: `itv1-${r.id}`,
     });
     sent += res.sent;
   }

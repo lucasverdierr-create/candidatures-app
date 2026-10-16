@@ -12,10 +12,14 @@ export default async (req) => {
   if (/^rec[A-Za-z0-9]{14}$/.test(id || "")) {
     try {
       const f = (await airtable("/" + id)).fields;
+      const score = Number(f.Score) || 0;
+      const emoji = score >= 80 ? "🔥" : score >= 70 ? "✅" : "👍";
+      const cut = (t, n) => { t = String(t || "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
       payload = {
-        title: `${f.Score ?? "?"}/100 · ${f.Entreprise || "Nouvelle offre"}`,
-        body: [f["Intitulé"], f.Ville].filter(Boolean).join(" — "),
+        title: `${emoji} ${score}/100 · ${cut(f["Intitulé"] || "Nouvelle offre", 60)}`,
+        body: [f.Entreprise, f.Ville, f.Salaire].filter(Boolean).join(" · "),
         url: `/?id=${id}`,
+        tag: `offre-${id}`,
       };
     } catch {
       payload.body = payload.body || "Une nouvelle offre est arrivée";
