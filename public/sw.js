@@ -1,5 +1,5 @@
 // Service worker : cache de l'app + notifications
-const CACHE = "candidatures-v6";
+const CACHE = "candidatures-v7";
 const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {

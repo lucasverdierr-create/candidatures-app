@@ -7,13 +7,13 @@ const heure = (d) => new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris"
 const jour = (d) => new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long" }).format(d);
 
 export default async () => {
-  const qs = new URLSearchParams({ filterByFormula: "NOT({Date entretien}='')", pageSize: "100" });
+  const qs = new URLSearchParams({ filterByFormula: "AND({Statut}='Entretien', NOT({Date entretien}=''))", pageSize: "100" });
   const { records } = await airtable("?" + qs.toString());
   const today = new Date(parisDay(new Date()) + "T12:00:00Z");
   let sent = 0;
   for (const r of records) {
     const f = r.fields;
-    if (["Refus", "Écartée"].includes(f.Statut)) continue;
+    if (f.Statut !== "Entretien") continue;
     const when = new Date(f["Date entretien"]);
     const diff = Math.round((new Date(parisDay(when) + "T12:00:00Z") - today) / 86400000);
     if (diff !== 3 && diff !== 1) continue;

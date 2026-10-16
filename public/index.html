@@ -72,7 +72,7 @@ svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke
 .tools{display:flex;gap:8px}
 .ib{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;padding:0;color:var(--ink)}
 .ib.on{color:var(--a1)}
-.ib:active,.rb:active,.go:active{transform:scale(.94)}
+.ib:active,.rb:active,.dock-go:active{transform:scale(.94)}
 .avatar{background:var(--grad);color:#fff;font:700 17px/1 var(--num);border:0;box-shadow:0 8px 20px -10px rgba(75,91,255,.8)}
 .hint{border-radius:var(--r3);padding:13px 15px;font-size:14px;color:var(--ink-2);margin-bottom:12px}
 .hint b{color:var(--ink)}
@@ -102,7 +102,7 @@ svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke
 .list{display:flex;flex-direction:column;gap:10px}
 .gh{display:flex;align-items:center;gap:8px;margin:12px 4px 0;font-size:14px;font-weight:650;color:var(--ink-2)}
 .gh:first-child{margin-top:0}
-.gh .d{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.gh .dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
 .gh .n{color:var(--ink-3);font-weight:500}
 
 .card{position:relative;display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;border-radius:var(--r2);padding:14px 16px 14px 14px;background:var(--card-hi);border:1px solid var(--edge);box-shadow:var(--shadow);color:inherit;transition:transform .15s}
@@ -210,7 +210,7 @@ details.blk .bb{padding-top:0}
 .when span{color:var(--ink-2);font-size:14.5px}
 
 .dock{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:4;max-width:616px;margin:0 auto;display:flex;gap:8px;padding:8px;border-radius:27px}
-.go{flex:1;border:0;border-radius:20px;background:var(--grad);color:#fff;font-weight:750;font-size:16px;padding:15px;box-shadow:0 12px 26px -14px rgba(75,91,255,.9)}
+.dock-go{flex:1;border:0;border-radius:20px;background:var(--grad);color:#fff;font-weight:750;font-size:16px;padding:15px;box-shadow:0 12px 26px -14px rgba(75,91,255,.9)}
 .sq{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:20px;background:var(--sunk);color:var(--ink);font-size:11.5px;font-weight:650;text-decoration:none}
 .sq[aria-disabled=true]{opacity:.35;pointer-events:none}
 
@@ -238,7 +238,7 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
 .deck{flex:1;margin:18px 0 16px;min-height:0}
 .tcard{position:absolute;inset:0;border-radius:32px;padding:26px 22px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;
   background:var(--solid);border:1px solid var(--edge);box-shadow:0 30px 60px -30px rgba(38,48,120,.5);touch-action:none;-webkit-user-select:none;user-select:none;will-change:transform;transition:transform .32s cubic-bezier(.2,.86,.24,1)}
-.tcard.back{transform:translateY(18px) scale(.93);opacity:.6;pointer-events:none;filter:saturate(.6)}
+.tcard.behind{transform:translateY(18px) scale(.93);opacity:.6;pointer-events:none;filter:saturate(.6)}
 .tcard.front{animation:rise .38s cubic-bezier(.2,.86,.24,1)}
 @keyframes rise{from{transform:translateY(18px) scale(.93);opacity:.55}}
 .tcard .bigring{flex-basis:132px;width:132px;height:132px}
@@ -257,11 +257,11 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
 .rb.keep{width:76px;height:76px;border:0;background:var(--grad);color:#fff;box-shadow:0 16px 32px -14px rgba(75,91,255,.9)}
 .rinfo{border:0;background:var(--sunk);color:var(--ink);font-weight:650;font-size:14px;padding:11px 16px;border-radius:999px}
 .tri-hint{text-align:center;color:var(--ink-3);font-size:13px;margin:12px 0 0}
-.done{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
-.done .ok{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:var(--grad);color:#fff;box-shadow:0 20px 44px -18px rgba(75,91,255,.9)}
-.done .ok svg.i{width:44px;height:44px;stroke-width:2.8}
-.done h2{font:800 28px/1.1 var(--display);margin:14px 0 0;letter-spacing:-.03em}
-.done p{color:var(--ink-2);margin:0 0 14px}
+.tri-done{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
+.tri-done .ok{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:var(--grad);color:#fff;box-shadow:0 20px 44px -18px rgba(75,91,255,.9)}
+.tri-done .ok svg.i{width:44px;height:44px;stroke-width:2.8}
+.tri-done h2{font:800 28px/1.1 var(--display);margin:14px 0 0;letter-spacing:-.03em}
+.tri-done p{color:var(--ink-2);margin:0 0 14px}
 
 /* ---------- Panneaux ---------- */
 .modal{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;background:rgba(6,9,24,.42);opacity:0;pointer-events:none;transition:opacity .22s}
@@ -492,7 +492,7 @@ function listHTML(tab) {
     : [{ k: "Refus", label: "Refus", sort: byRecent("Date de candidature") }, { k: "Écartée", label: "Offres écartées", sort: byRecent("createdTime") }];
   return groups.map((g) => {
     const list = items.filter((o) => statut(o) === g.k).sort(g.sort);
-    return list.length ? `<h4 class="gh" style="--c:${stColor(g.k)}"><span class="d"></span>${g.label}<span class="n">${list.length}</span></h4>${list.map((o) => card(o, tab.k)).join("")}` : "";
+    return list.length ? `<h4 class="gh" style="--c:${stColor(g.k)}"><span class="dot"></span>${g.label}<span class="n">${list.length}</span></h4>${list.map((o) => card(o, tab.k)).join("")}` : "";
   }).join("");
 }
 function emptyHTML(k) {
@@ -544,7 +544,7 @@ function renderTriage() {
   if (tr.i >= tr.ids.length) {
     t.innerHTML = `<div class="aurora"></div>
       <div class="tri-top"><button class="ib glass" id="triClose" aria-label="Fermer">${icon("x")}</button><span></span><span style="width:42px"></span></div>
-      <div class="done"><div class="ok">${icon("check")}</div><h2>Tri terminé</h2>
+      <div class="tri-done"><div class="ok">${icon("check")}</div><h2>Tri terminé</h2>
         <p>${tr.kept} offre${tr.kept > 1 ? "s" : ""} gardée${tr.kept > 1 ? "s" : ""}, ${tr.out} écartée${tr.out > 1 ? "s" : ""}</p>
         <button class="btn pri" id="triEnd" style="padding:15px 22px">Voir mes offres à postuler</button></div>`;
     $("#triClose").onclick = closeTriage;
@@ -556,7 +556,7 @@ function renderTriage() {
     <div class="tri-top"><button class="ib glass" id="triClose" aria-label="Fermer">${icon("x")}</button><span>${tr.i + 1} sur ${tr.ids.length}</span><span style="width:42px"></span></div>
     <div class="prog"><i style="width:${(tr.i / tr.ids.length) * 100}%"></i></div>
     <div class="deck">
-      ${nxt ? `<div class="tcard back">${triCard(nxt)}</div>` : ""}
+      ${nxt ? `<div class="tcard behind">${triCard(nxt)}</div>` : ""}
       <div class="tcard front" id="tfront">${triCard(cur)}<span class="stamp keep">Garder</span><span class="stamp out">Écarter</span></div>
     </div>
     <div class="tri-actions">
@@ -686,7 +686,7 @@ function openDetail(id, opts = {}) {
       </article>
     </div>
     <div class="dock glass">
-      <button class="go" id="apply">${["À postuler", "Écartée"].includes(st) ? "Postuler" : "Ma candidature"}</button>
+      <button class="dock-go" id="apply">${["À postuler", "Écartée"].includes(st) ? "Postuler" : "Ma candidature"}</button>
       <a class="sq" ${cv ? `href="${esc(cv)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'}>${icon("doc")}CV</a>
       <a class="sq" ${o.Lien ? `href="${esc(o.Lien)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'}>${icon("ext")}Annonce</a>
     </div>`;
