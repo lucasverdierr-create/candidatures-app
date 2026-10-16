@@ -1,7 +1,7 @@
 // POST /api/offre-update  { id, fields: { Statut, "Notes d'appels", "Date de candidature" } }
 import { json, checkPin, airtable, toOffre } from "../lib/common.js";
 
-const EDITABLE = ["Statut", "Notes d'appels", "Date de candidature"];
+const EDITABLE = ["Statut", "Notes d'appels", "Date de candidature", "Date entretien"];
 
 export default async (req) => {
   if (req.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);

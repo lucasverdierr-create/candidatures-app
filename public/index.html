@@ -104,6 +104,36 @@ details[open].group summary::after{transform:rotate(-135deg);margin-bottom:-4px}
 .skeleton{height:84px;border-radius:var(--radius);background:linear-gradient(90deg,var(--surface) 0,var(--surface-2) 50%,var(--surface) 100%);background-size:200% 100%;animation:sh 1.2s infinite}
 @keyframes sh{to{background-position:-200% 0}}
 .spin{animation:rot 1s linear infinite}@keyframes rot{to{transform:rotate(360deg)}}
+.tag.itv{background:color-mix(in srgb,var(--mid) 18%,transparent);color:var(--mid);font-weight:600}
+.next{display:flex;gap:12px;align-items:center;background:var(--accent);color:var(--accent-ink);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border:0;width:100%;text-align:left;cursor:pointer}
+.next .j{flex:0 0 auto;font:700 22px/1 -apple-system,"SF Pro Display",sans-serif;text-align:center;min-width:44px}
+.next .j small{display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:2px}
+.next b{display:block}.next span{font-size:14px;opacity:.85}
+.dt{width:100%;border:0;border-radius:12px;background:var(--surface-2);padding:12px;font-size:16px;outline:none;-webkit-appearance:none;min-height:46px}
+.tag.new{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.card.unseen .t::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin:0 6px 2px 0;vertical-align:middle}
+.copyrow{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--line)}
+.copyrow:first-of-type{border-top:0}
+.copyrow .lbl{font-size:12px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+.copyrow .val{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copyrow > div{flex:1;min-width:0}
+.mini{text-decoration:none;border:0;border-radius:999px;padding:6px 12px;background:var(--surface-2);font-size:13px;font-weight:600;cursor:pointer;color:var(--ink);flex:0 0 auto}
+.mini.ok{background:var(--accent);color:var(--accent-ink)}
+.gh{display:flex;justify-content:space-between;align-items:center;padding-right:12px}
+.modal{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s}
+.modal.open{opacity:1;pointer-events:auto}
+.panel{width:100%;max-width:640px;margin:0 auto;background:var(--bg);border-radius:22px 22px 0 0;padding:10px 16px calc(env(safe-area-inset-bottom) + 20px);
+  max-height:92vh;overflow-y:auto;transform:translateY(30px);transition:transform .25s}
+.modal.open .panel{transform:none}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px}
+.panel h2{font:700 22px/1.2 -apple-system,"SF Pro Display",sans-serif;margin:0 0 4px}
+.step{display:flex;gap:12px;align-items:center;background:var(--surface);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-top:10px}
+.step .num{flex:0 0 30px;height:30px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:700;font-size:14px}
+.step.done .num{background:var(--accent);color:var(--accent-ink)}
+.step .tx{flex:1;min-width:0}.step .tx b{display:block;font-size:15px}.step .tx span{font-size:13px;color:var(--ink-2)}
+.field{display:block;margin-top:12px}.field span{font-size:13px;color:var(--ink-3)}
+.field input{width:100%;border:0;border-radius:12px;background:var(--surface);box-shadow:var(--shadow);padding:12px;font-size:16px;outline:none;margin-top:4px}
+
 </style>
 </head>
 <body>
@@ -123,7 +153,11 @@ const FILTRES = [
 const DEMO = new URLSearchParams(location.search).has("demo");
 const isStandalone = () => window.navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
 
-const state = { pin: localStorage.getItem("pin") || "", offres: [], filtre: "À postuler", q: "", loading: false, current: null };
+const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const DEFAULT_ME = { email: "lucas.verdier@hotmail.com", tel: "06 34 25 51 93", linkedin: "linkedin.com/in/lucas-verdier", ville: "Amiens (80)" };
+const state = { pin: localStorage.getItem("pin") || "", offres: [], filtre: "À postuler", q: "", loading: false, current: null,
+  me: { ...DEFAULT_ME, ...ls.get("me", {}) }, seen: ls.get("seen", null), applyFor: null };
 
 // ---------- Utilitaires ----------
 const $ = (s, el = document) => el.querySelector(s);
@@ -131,7 +165,24 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const scoreColor = (s) => (s >= 75 ? "var(--hi)" : s >= 60 ? "var(--mid)" : "var(--lo)");
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "");
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2200); }
+async function copy(text, btn) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const t = document.createElement("textarea"); t.value = text; t.style.position = "fixed"; t.style.opacity = "0"; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+  if (btn) { const old = btn.textContent; btn.textContent = "Copié ✓"; btn.classList.add("ok"); setTimeout(() => { btn.textContent = old; btn.classList.remove("ok"); }, 1500); }
+  else toast("Copié");
+}
+const itvDate = (o) => (o["Date entretien"] ? new Date(o["Date entretien"]) : null);
+const fmtItv = (d) => d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) + " · " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const daysUntil = (d) => { const a = new Date(); a.setHours(0, 0, 0, 0); const b = new Date(d); b.setHours(0, 0, 0, 0); return Math.round((b - a) / 86400000); };
+const toLocalInput = (d) => { const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 16); };
+function nextInterview() {
+  return state.offres.map((o) => ({ o, d: itvDate(o) })).filter((x) => x.d && daysUntil(x.d) >= 0 && !["Refus", "Écartée"].includes(x.o.Statut))
+    .sort((a, b) => a.d - b.d)[0];
+}
+const isNew = (o) => state.seen && !state.seen.includes(o.id) && (o.Statut || "À postuler") === "À postuler";
+function markSeen(id) { if (!state.seen) state.seen = []; if (!state.seen.includes(id)) { state.seen.push(id); ls.set("seen", state.seen.slice(-2000)); } }
 const ICON = {
+  user: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
   refresh: '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>',
   bell: '<svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
   back: '<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
@@ -169,7 +220,8 @@ function logout() { localStorage.removeItem("pin"); state.pin = ""; renderLogin(
 // ---------- Données ----------
 async function load(silent = false) {
   state.loading = true; if (!silent) render();
-  try { const { offres } = await api("/api/offres"); state.offres = offres || []; }
+  try { const { offres } = await api("/api/offres"); state.offres = offres || [];
+    if (state.seen === null) { state.seen = state.offres.map((o) => o.id); ls.set("seen", state.seen); } }
   finally { state.loading = false; }
 }
 
@@ -192,13 +244,16 @@ function render() {
   $("#app").innerHTML = `
   <div class="wrap">
     <div class="top">
-      <div><h1>Candidatures</h1><div class="sub">${state.offres.length} offres suivies</div></div>
+      <div><h1>Candidatures</h1><div class="sub">${(() => { const n = state.offres.filter(isNew).length; return n ? `<b style="color:var(--accent)">${n} nouvelle${n > 1 ? "s" : ""}</b> · ` : ""; })()}${state.offres.length} offres suivies</div></div>
       <div class="actions">
+        <button class="icon-btn" id="me" aria-label="Mes infos">${ICON.user}</button>
         <button class="icon-btn ${notifOn ? "on" : ""}" id="bell" aria-label="Notifications">${ICON.bell}</button>
         <button class="icon-btn" id="refresh" aria-label="Actualiser">${ICON.refresh}</button>
       </div>
     </div>
     ${!isStandalone() && !DEMO ? `<div class="banner"><b>Installe l'app</b> pour recevoir les notifications : bouton Partager <span aria-hidden="true">⬆︎</span> puis « Sur l'écran d'accueil ».</div>` : ""}
+    ${(() => { const n = nextInterview(); if (!n) return ""; const j = daysUntil(n.d);
+      return `<button class="next" data-id="${n.o.id}"><div class="j">${j === 0 ? "Auj." : "J-" + j}<small>${j === 0 ? "" : j === 1 ? "demain" : "jours"}</small></div><div><b>Entretien · ${esc(n.o.Entreprise || "")}</b><span>${esc(fmtItv(n.d))} — ${esc(n.o["Intitulé"] || "")}</span></div></button>`; })()}
     <input class="search" id="q" type="search" placeholder="Rechercher un poste, une entreprise…" value="${esc(state.q)}">
     <div class="chips">${FILTRES.map((f) => `<button class="chip ${state.filtre === f.k ? "active" : ""}" data-f="${f.k}">${f.label}<span class="n">${count(f.k)}</span></button>`).join("")}</div>
     <div class="list">
@@ -208,19 +263,22 @@ function render() {
   </div>`;
   $("#q").oninput = (e) => { state.q = e.target.value; const pos = e.target.selectionStart; render(); const i = $("#q"); i.focus(); i.setSelectionRange(pos, pos); };
   document.querySelectorAll(".chip").forEach((b) => (b.onclick = () => { state.filtre = b.dataset.f; render(); }));
-  document.querySelectorAll(".card").forEach((b) => (b.onclick = () => openDetail(b.dataset.id)));
+  document.querySelectorAll(".card, .next").forEach((b) => (b.onclick = () => openDetail(b.dataset.id)));
   $("#refresh").onclick = async () => { $("#refresh svg").classList.add("spin"); try { await load(true); toast("À jour"); } catch (e) { toast(e.message); } render(); };
   $("#bell").onclick = enableNotifications;
+  $("#me").onclick = openMe;
 }
 
 function card(o) {
   const s = Number(o.Score) || 0;
-  return `<button class="card" data-id="${o.id}">
+  return `<button class="card ${isNew(o) ? "unseen" : ""}" data-id="${o.id}">
     <div class="score" style="--p:${s};--c:${scoreColor(s)}"><span>${s}</span></div>
     <div style="min-width:0">
       <div class="t">${esc(o["Intitulé"] || "Sans titre")}</div>
       <div class="m">${esc(o.Entreprise || "")}${o.Ville ? " · " + esc(o.Ville) : ""}</div>
       <div class="tags">
+        ${isNew(o) ? '<span class="tag new">Nouveau</span>' : ""}
+        ${itvDate(o) && daysUntil(itvDate(o)) >= 0 ? `<span class="tag itv">Entretien ${esc(fmtItv(itvDate(o)))}</span>` : ""}
         ${o.Source ? `<span class="tag">${esc(o.Source)}</span>` : ""}
         ${o.Salaire ? `<span class="tag">${esc(o.Salaire)}</span>` : ""}
         ${o["Date de candidature"] ? `<span class="tag st">Postulé le ${fmtDate(o["Date de candidature"])}</span>` : ""}
@@ -229,6 +287,9 @@ function card(o) {
 }
 
 // ---------- Fiche ----------
+function copySection(title, text, key) {
+  return text ? `<div class="group"><div class="gh"><h3>${title}</h3><button class="mini" data-copy="${key}">Copier</button></div><div class="c">${esc(text)}</div></div>` : "";
+}
 function section(title, text, cls = "") { return text ? `<div class="group ${cls}"><h3>${title}</h3><div class="c">${esc(text)}</div></div>` : ""; }
 function fold(title, text) { return text ? `<details class="group"><summary><h3>${title}</h3></summary><div class="c">${esc(text)}</div></details>` : ""; }
 const link = (href, label, primary) => `<a class="btn ${primary ? "primary" : ""}" ${href ? `href="${esc(href)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'}>${label}</a>`;
@@ -237,6 +298,7 @@ function openDetail(id) {
   const o = state.offres.find((x) => x.id === id);
   if (!o) return;
   state.current = o;
+  markSeen(id);
   history.replaceState(null, "", "?id=" + id + (DEMO ? "&demo" : ""));
   let sh = $("#sheet");
   if (!sh) { sh = document.createElement("div"); sh.id = "sheet"; sh.className = "sheet"; document.body.appendChild(sh); }
@@ -252,7 +314,8 @@ function openDetail(id) {
         <div class="why">${esc(o.Pourquoi || "")}</div>
       </div>
       <div class="btns">
-        ${link(o.Lien, "Voir l'offre", true)}
+        <button class="btn primary" id="apply">Postuler</button>
+        ${link(o.Lien, "Voir l'offre")}
         ${link(o["CV PDF"] || o["Lien CV"], o["CV PDF"] ? "CV (PDF)" : "CV adapté")}
         ${o["CV PDF"] && o["Lien CV"] ? link(o["Lien CV"], "Modifier le CV") : ""}
         ${phone ? `<a class="btn" href="tel:${phone[0].replace(/[\s.-]/g, "")}">Appeler</a>` : ""}
@@ -262,6 +325,19 @@ function openDetail(id) {
         <div class="status">${STATUTS.map((x) => `<button data-s="${x}" class="${x === st ? "active" : ""}">${x}</button>`).join("")}</div>
       </div>
 
+      <div class="group"><h3>Entretien</h3>
+        <div class="c" style="white-space:normal">
+          ${itvDate(o) ? `<div style="margin-bottom:10px"><b>${esc(fmtItv(itvDate(o)))}</b>${daysUntil(itvDate(o)) >= 0 ? ` <span class="tag itv">${daysUntil(itvDate(o)) === 0 ? "aujourd'hui" : "dans " + daysUntil(itvDate(o)) + " j"}</span>` : ""}</div>` : '<div class="sub" style="margin:0 0 10px">Ajoute la date pour être prévenu à J-3 et la veille.</div>'}
+          <input class="dt" id="itv" type="datetime-local" value="${itvDate(o) ? toLocalInput(itvDate(o)) : ""}">
+          <div class="btns" style="margin:10px 0 0">
+            <button class="btn primary" id="saveItv">${itvDate(o) ? "Modifier la date" : "Enregistrer la date"}</button>
+            ${itvDate(o) && !DEMO ? `<a class="btn" href="/api/ics?id=${o.id}&k=${encodeURIComponent(state.pin)}">Ajouter au calendrier</a>` : ""}
+            ${itvDate(o) ? `<button class="btn" id="clearItv" style="color:var(--danger)">Supprimer</button>` : ""}
+          </div>
+        </div>
+      </div>
+
+      ${copySection("Message de candidature", o["Message candidature"], "msg")}
       ${section("Pitch 30 s", o["Pitch 30 s"], "pitch")}
       ${section("Atouts à mettre en avant", o["Atouts à mettre en avant"])}
       ${section("Points à préparer", o["Points à préparer"])}
@@ -274,6 +350,7 @@ function openDetail(id) {
         </div>
       </div>
 
+      ${o["Lettre de motivation"] ? `<details class="group"><summary><h3>Lettre de motivation</h3></summary><div class="c">${esc(o["Lettre de motivation"])}</div><div style="padding:0 16px 14px"><button class="btn" style="width:100%" data-copy="lettre">Copier la lettre</button></div></details>` : ""}
       ${fold("L'entreprise", o["Présentation entreprise"])}
       ${fold("Missions", o.Missions)}
       ${fold("Profil recherché", o["Profil recherché"])}
@@ -291,6 +368,17 @@ function openDetail(id) {
   $("#back").onclick = closeDetail;
   sh.querySelectorAll(".status button").forEach((b) => (b.onclick = () => updateStatut(o, b.dataset.s)));
   $("#saveNotes").onclick = () => save(o, { "Notes d'appels": $("#notes").value }, "Notes enregistrées");
+  $("#apply").onclick = () => openApply(o);
+  $("#saveItv").onclick = () => {
+    const v = $("#itv").value;
+    if (!v) return toast("Choisis une date et une heure");
+    const fields = { "Date entretien": new Date(v).toISOString() };
+    if (!["Entretien", "Offre"].includes(o.Statut)) fields.Statut = "Entretien";
+    save(o, fields, "Entretien enregistré · rappel à J-3");
+  };
+  const clr = $("#clearItv"); if (clr) clr.onclick = () => save(o, { "Date entretien": "" }, "Date supprimée");
+  const copyMap = { msg: o["Message candidature"], lettre: o["Lettre de motivation"] };
+  sh.querySelectorAll("[data-copy]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); copy(copyMap[b.dataset.copy] || "", b); }));
 }
 function closeDetail() { const sh = $("#sheet"); if (sh) sh.classList.remove("open"); state.current = null; history.replaceState(null, "", DEMO ? "?demo" : "/"); render(); }
 
@@ -317,6 +405,62 @@ async function openFromUrl() {
   openDetail(id);
 }
 
+// ---------- Postuler (parcours guidé) ----------
+function modal(html) {
+  let m = $("#modal");
+  if (!m) { m = document.createElement("div"); m.id = "modal"; m.className = "modal"; document.body.appendChild(m);
+    m.addEventListener("click", (e) => { if (e.target === m) closeModal(); }); }
+  m.innerHTML = `<div class="panel"><div class="grab"></div>${html}</div>`;
+  requestAnimationFrame(() => m.classList.add("open"));
+  return m;
+}
+function closeModal() { const m = $("#modal"); if (m) m.classList.remove("open"); }
+
+function openApply(o) {
+  state.applyFor = o.id;
+  const cv = o["CV PDF"] || o["Lien CV"];
+  const me = state.me;
+  const steps = [
+    cv ? { k: "cv", t: "Enregistrer mon CV", s: "Ouvre le PDF → Partager → Enregistrer dans Fichiers", a: `<a class="mini" href="${esc(cv)}" target="_blank" rel="noopener" data-step="cv">Ouvrir</a>` } : null,
+    o["Message candidature"] ? { k: "msg", t: "Copier mon message", s: "À coller dans le champ « message » du formulaire", a: `<button class="mini" data-step="msg">Copier</button>` } : null,
+    { k: "offre", t: "Ouvrir l'annonce et postuler", s: "Joins le CV depuis Fichiers › Récents", a: o.Lien ? `<a class="mini" href="${esc(o.Lien)}" target="_blank" rel="noopener" data-step="offre">Ouvrir</a>` : `<span class="mini" style="opacity:.4">Pas de lien</span>` },
+  ].filter(Boolean);
+  const m = modal(`
+    <h2>Postuler</h2>
+    <div class="sub">${esc(o["Intitulé"] || "")} · ${esc(o.Entreprise || "")}</div>
+    ${steps.map((st, i) => `<div class="step" data-k="${st.k}"><div class="num">${i + 1}</div><div class="tx"><b>${st.t}</b><span>${st.s}</span></div>${st.a}</div>`).join("")}
+    <div class="group" style="margin-top:14px"><h3>Mes infos à copier</h3>
+      ${[["E-mail", me.email], ["Téléphone", me.tel], ["LinkedIn", me.linkedin]].filter((x) => x[1]).map(([l, v]) =>
+        `<div class="copyrow"><div><div class="lbl">${l}</div><div class="val">${esc(v)}</div></div><button class="mini" data-val="${esc(v)}">Copier</button></div>`).join("")}
+    </div>
+    <button class="btn primary" style="width:100%;margin-top:16px" id="didApply">J'ai postulé ✓</button>
+    <button class="btn" style="width:100%;margin-top:8px;box-shadow:none;background:none;color:var(--ink-2)" id="cancelApply">Plus tard</button>`);
+  const done = (k) => { const el = m.querySelector(`.step[data-k="${k}"]`); if (el) el.classList.add("done"); };
+  m.querySelectorAll("[data-step]").forEach((b) => (b.onclick = (e) => {
+    const k = b.dataset.step;
+    if (k === "msg") { e.preventDefault(); copy(o["Message candidature"], b); }
+    done(k);
+  }));
+  m.querySelectorAll("[data-val]").forEach((b) => (b.onclick = () => copy(b.dataset.val, b)));
+  $("#didApply").onclick = async () => { closeModal(); state.applyFor = null; if ((o.Statut || "À postuler") !== "Postulé") await updateStatut(o, "Postulé"); };
+  $("#cancelApply").onclick = () => { closeModal(); state.applyFor = null; };
+}
+
+function openMe() {
+  const me = state.me;
+  modal(`
+    <h2>Mes infos</h2>
+    <div class="sub">Proposées à copier au moment de postuler. Enregistrées sur ce téléphone.</div>
+    <label class="field"><span>E-mail</span><input id="me-email" type="email" value="${esc(me.email)}"></label>
+    <label class="field"><span>Téléphone</span><input id="me-tel" type="tel" value="${esc(me.tel)}"></label>
+    <label class="field"><span>LinkedIn</span><input id="me-linkedin" type="url" value="${esc(me.linkedin)}"></label>
+    <button class="btn primary" style="width:100%;margin-top:16px" id="saveMe">Enregistrer</button>`);
+  $("#saveMe").onclick = () => {
+    state.me = { ...state.me, email: $("#me-email").value.trim(), tel: $("#me-tel").value.trim(), linkedin: $("#me-linkedin").value.trim() };
+    ls.set("me", state.me); closeModal(); toast("Infos enregistrées");
+  };
+}
+
 // ---------- Notifications ----------
 function b64ToUint8(b64) { const p = "=".repeat((4 - (b64.length % 4)) % 4); const raw = atob((b64 + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(raw, (c) => c.charCodeAt(0)); }
 async function enableNotifications() {
@@ -338,19 +482,19 @@ async function enableNotifications() {
 // ---------- Mode démo (aperçu sans Airtable) ----------
 function demoApi(path, opts) {
   if (!window._demo) window._demo = [
-    { id: "recDEMO0000000001", Score: 84, "Intitulé": "Consultant SEO / GEO", Entreprise: "Promatec", Ville: "Bondues", Source: "Indeed", Contrat: "CDI", Salaire: "32–38 k€", Statut: "À postuler", Lien: "#", "Lien CV": "#", Pourquoi: "SEO éditorial et technique, WordPress, appétence IA : correspondance quasi parfaite.", "Pitch 30 s": "Je suis chargé de marketing digital depuis 4 ans, spécialisé SEO : j'ai fait passer le trafic organique de 2 000 à 2 500 sessions par mois et je développe mes propres outils avec l'IA, ce qui colle à votre offre GEO.", "Atouts à mettre en avant": "– +25 % de trafic organique\n– Tableaux de bord SEO développés en interne\n– WordPress / Webflow au quotidien", "Points à préparer": "– Netlinking : expliquer comment tu monterais en compétence\n– Expérience agence : mettre en avant le multi-marques", "Questions à poser": "– Combien de clients suivrais-je ?\n– Quels outils SEO utilise l'agence ?", "Présentation entreprise": "Agence web intégrée à Promatec Cloud, 4 personnes, sites WordPress/WooCommerce et SEO.", Missions: "– Audits SEO\n– Stratégies éditoriales\n– Offre GEO", "Profil recherché": "– Bac+3\n– 2 à 5 ans en SEO", "Contact recruteur": "" },
-    { id: "recDEMO0000000002", Score: 72, "Intitulé": "Traffic Manager H/F", Entreprise: "123 Pare-Brise", Ville: "Marquette-lez-Lille", Source: "LinkedIn", Contrat: "CDI", Statut: "Postulé", "Date de candidature": "2026-10-14", Lien: "#", Pourquoi: "Google Ads et KPI solides ; Meta et TikTok Ads à acquérir." },
+    { id: "recDEMO0000000001", Score: 84, "Intitulé": "Consultant SEO / GEO", Entreprise: "Promatec", Ville: "Bondues", Source: "Indeed", Contrat: "CDI", Salaire: "32–38 k€", Statut: "À postuler", Lien: "#", "Lien CV": "#", Pourquoi: "SEO éditorial et technique, WordPress, appétence IA : correspondance quasi parfaite.", "Pitch 30 s": "Je suis chargé de marketing digital depuis 4 ans, spécialisé SEO : j'ai fait passer le trafic organique de 2 000 à 2 500 sessions par mois et je développe mes propres outils avec l'IA, ce qui colle à votre offre GEO.", "Atouts à mettre en avant": "– +25 % de trafic organique\n– Tableaux de bord SEO développés en interne\n– WordPress / Webflow au quotidien", "Points à préparer": "– Netlinking : expliquer comment tu monterais en compétence\n– Expérience agence : mettre en avant le multi-marques", "Questions à poser": "– Combien de clients suivrais-je ?\n– Quels outils SEO utilise l'agence ?", "Présentation entreprise": "Agence web intégrée à Promatec Cloud, 4 personnes, sites WordPress/WooCommerce et SEO.", Missions: "– Audits SEO\n– Stratégies éditoriales\n– Offre GEO", "Profil recherché": "– Bac+3\n– 2 à 5 ans en SEO", "Contact recruteur": "", "Message candidature": "Bonjour,\n\nChargé de marketing digital depuis 4 ans, j'ai fait progresser le trafic organique de 25 % et je développe mes propres outils SEO avec l'IA. Votre projet d'offre GEO correspond exactement à ce que je veux construire.\n\nJe serais ravi d'en échanger avec vous.\nLucas Verdier", "Lettre de motivation": "Madame, Monsieur,\n\n(Exemple de lettre générée par Claude…)\n\nLucas Verdier" },
+    { id: "recDEMO0000000002", "Date entretien": new Date(Date.now() + 3 * 86400000).setHours(14, 30, 0, 0) && new Date(new Date(Date.now() + 3 * 86400000).setHours(14, 30, 0, 0)).toISOString(), Score: 72, "Intitulé": "Traffic Manager H/F", Entreprise: "123 Pare-Brise", Ville: "Marquette-lez-Lille", Source: "LinkedIn", Contrat: "CDI", Statut: "Entretien", "Date de candidature": "2026-10-14", Lien: "#", Pourquoi: "Google Ads et KPI solides ; Meta et TikTok Ads à acquérir." },
     { id: "recDEMO0000000003", Score: 66, "Intitulé": "Chargé d'acquisition digital SEO", Entreprise: "Groupe Lebrun", Ville: "Arques", Source: "Indeed", Contrat: "CDI", Salaire: "dès 28 k€", Statut: "À postuler", Lien: "#", Pourquoi: "Multi-marques SEA + SEO comme ton poste actuel ; Amazon Ads manquant." },
     { id: "recDEMO0000000004", Score: 41, "Intitulé": "Social Media Manager", Entreprise: "Alice Délice", Ville: "Villeneuve-d'Ascq", Source: "HelloWork", Contrat: "CDI", Statut: "Écartée", Pourquoi: "Poste centré réseaux sociaux, peu d'acquisition." },
   ];
-  if (path.startsWith("/api/offres")) return Promise.resolve({ offres: window._demo });
+  if (path.startsWith("/api/offres")) { if (state.seen === null) state.seen = ["recDEMO0000000002", "recDEMO0000000004"]; return Promise.resolve({ offres: window._demo }); }
   if (path === "/api/offre-update") { const b = JSON.parse(opts.body); const o = window._demo.find((x) => x.id === b.id); Object.assign(o, b.fields); return Promise.resolve({ offre: o }); }
   return Promise.resolve({});
 }
 
 // ---------- Démarrage ----------
 if ("serviceWorker" in navigator && !DEMO) navigator.serviceWorker.register("/sw.js").catch(() => {});
-document.addEventListener("visibilitychange", () => { if (!document.hidden && (state.pin || DEMO) && !state.current) load(true).then(render).catch(() => {}); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && (state.pin || DEMO) && !state.current && !state.applyFor) load(true).then(render).catch(() => {}); });
 (async () => {
   if (!state.pin && !DEMO) return renderLogin();
   render();
